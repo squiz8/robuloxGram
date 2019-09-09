@@ -13,15 +13,12 @@ class PostsController extends Controller
     }
     
     public function index() {
+
         $users = auth()->user()->following()->pluck('profiles.user_id');
-        $posts = Post::whereIn('user_id', $users)->with('user')->latest()->paginate(4);
+        $posts = Post::whereIn('user_id', $users)->with('user')->latest()->paginate(5);
+        return view('posts.index', compact('posts'));
         
-        $postCount = $user->posts->count();
-        $followersCount = $user->profile->followers->count();
-        $followingCount = $user->following->count(); 
-        
-        return view('posts.index', compact('posts', 'postCount', 'followersCount', 'followingCount'));
-        }
+    }
     
     public function create() {
         return view('posts.create');     

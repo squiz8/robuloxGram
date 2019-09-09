@@ -9,17 +9,41 @@ use Illuminate\Http\Request;
 class ProfileController extends Controller {
 
     public function index(User $user) {
-        
         $follows = (auth()->user()) ? auth()->user()->following->contains($user->id) : false;
-         $postCount = $user->posts->count();
-        $followersCount = $user->profile->followers->count();
-        $followingCount = $user->following->count(); 
-                return view('profiles.index', compact('user', 'follows','postCount', 'followersCount', 'followingCount'));
+
+        $postCount = Cache::remember(
+            'count.posts.' . $user->id,
+            now()->addSeconds(30),
+            function () use ($user) {
+                return $user->posts->count();
+            });
+
+        $followersCount = Cache::remember(
+            'count.followers.' . $user->id,
+            now()->addSeconds(30),
+            function () use ($user) {
+                return $user->profile->followers->count();
+            });
+
+        $followingCount = Cache::remember(
+            'count.following.' . $user->id,
+            now()->addSeconds(30),
+            function () use ($user) {
+                return $user->following->count();
+            });
+
+        return view('profile.index', compact('user', 'follows', 'postCount', 'followersCount', 'followingCount'));
+    
+//        $follows = (auth()->user()) ? auth()->user()->following->contains($user->id) : false;
+//        $postCount = $user->posts->count();
+//        $followersCount = $user->profile->followers->count();
+//        $followingCount = $user->following->count();
+//        return view('profiles.index', compact('user', 'follows', 'postCount', 'followersCount', 'followingCount'));
     }
 
     public function edit(User $user) {
         $this->authorize('update', $user->profile);
-        return view('profiles.edit', compact('user'));
+        return view('profile.edit', compact('user'));
     }
 
     public function update(User $user) {
@@ -36,13 +60,12 @@ class ProfileController extends Controller {
 
             $image = Image::make(public_path("storage/{$imagePath}"))->fit(1000, 1000);
             $image->save();
-            
+
             $imageArr = ['image' => $imagePath];
         }
-        
+
         auth()->user()->profile->update(array_merge(
-                $data, 
-                $imageArr ?? []
+                        $data, $imageArr ?? []
         ));
 
 
